@@ -22,7 +22,7 @@ export default function PendingScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from('wash_records')
-      .select('*')
+      .select('*, wash_contacts(*)')
       .eq('payment_status', 'pending')
       .order('created_at', { ascending: false });
 
@@ -132,8 +132,8 @@ export default function PendingScreen() {
                 <Text style={styles.vehicleNumber}>{item.vehicle_number}</Text>
                 <Text style={styles.amount}>₹{item.amount}</Text>
               </View>
-              {(item as any).customer_name ? (
-                <Text style={styles.customerName}>{(item as any).customer_name}</Text>
+              {item.wash_contacts?.[0] ? (
+                <Text style={styles.customerName}>{item.wash_contacts[0].customer_name}</Text>
               ) : null}
               <Text style={styles.vehicleType}>{(item as any).vehicle_type ?? 'Vehicle Wash'}</Text>
               <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>

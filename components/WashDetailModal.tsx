@@ -1,8 +1,9 @@
 import * as Linking from 'expo-linking';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,7 +18,7 @@ const WHATSAPP_MESSAGE = (record: WashRecord, contactName?: string) =>
   `*AKASH WATER SERVICES*\n` +
   `Golagamudi, Opp. Vengamamba Daba\n\n` +
   `*Vehicle Wash Completed*\n\n` +
-  `Customer: ${contactName ?? record.customer_name ?? ''}\n` +
+  `Customer: ${contactName ?? ''}\n` +
   `Vehicle: ${record.vehicle_number}\n` +
   `Type: ${record.vehicle_type ?? ''}\n` +
   `Amount Paid: ₹${record.amount}\n\n` +
@@ -47,12 +48,23 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
   const [newPhone, setNewPhone] = useState('');
   const [savingContact, setSavingContact] = useState(false);
 
+  // Slide-up animation for sheet only
+  const slideY = useRef(new Animated.Value(600)).current;
+
   useEffect(() => {
     if (record) {
       setEditAmount(String(record.amount));
       setEditingAmount(false);
       setShowAddContact(false);
       fetchContacts(record.id);
+      // Slide sheet up
+      slideY.setValue(600);
+      Animated.spring(slideY, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 0,
+        speed: 20,
+      }).start();
     } else {
       setContacts([]);
     }
@@ -116,6 +128,26 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
     Linking.openURL(`https://wa.me/91${contact.phone_number}?text=${encodeURIComponent(msg)}`);
   };
 
+  const deleteContact = (contact: WashContact) => {
+    Alert.alert(
+      'Delete Contact',
+      `Remove ${contact.customer_name} from this record?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            const { error } = await supabase
+              .from('wash_contacts')
+              .delete()
+              .eq('id', contact.id);
+            if (error) { Alert.alert('Error', error.message); return; }
+            setContacts(prev => prev.filter(c => c.id !== contact.id));
+          },
+        },
+      ]
+    );
+  };
+
   const saveAndSendContact = async () => {
     if (!record) return;
     if (!newName.trim()) { Alert.alert('Missing', 'Enter customer name.'); return; }
@@ -144,9 +176,9 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
     });
 
   return (
-    <Modal visible={!!record} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={!!record} animationType="none" transparent onRequestClose={onClose}>
       <View style={s.overlay}>
-        <View style={s.sheet}>
+        <Animated.View style={[s.sheet, { transform: [{ translateY: slideY }] }]}>
           <View style={s.handle} />
 
           {/* Add contact sub-sheet */}
@@ -197,7 +229,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                     <Text style={s.statusText}>{record.payment_status === 'paid' ? '✅ Paid' : '⏳ Pending'}</Text>
                   </View>
 
-                  <Row label="Customer" value={record.customer_name || '—'} />
+                  <Row label="Customer" value={contacts[0]?.customer_name || '—'} />
                   <Row label="Vehicle" value={record.vehicle_number} />
                   <Row label="Type" value={record.vehicle_type || '—'} />
                   <Row label="Mobile" value={`+91 ${record.mobile_number}`} />
@@ -257,9 +289,14 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                               <Text style={s.contactPhone}>+91 {c.phone_number}</Text>
                             </View>
                           </View>
-                          <TouchableOpacity style={s.waBtn} onPress={() => sendToContact(c)} activeOpacity={0.8}>
-                            <Text style={s.waBtnText}>📱 Send</Text>
-                          </TouchableOpacity>
+                          <View style={s.contactActions}>
+                            <TouchableOpacity style={s.waBtn} onPress={() => sendToContact(c)} activeOpacity={0.8}>
+                              <Text style={s.waBtnText}>📱 Send</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={s.deleteBtn} onPress={() => deleteContact(c)} activeOpacity={0.8}>
+                              <Text style={s.deleteBtnText}>🗑️</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       ))
                   }
@@ -267,7 +304,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
               )}
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -323,8 +360,11 @@ const s = StyleSheet.create({
   typeBadgeDriver: { backgroundColor: '#e8f5e9' },
   typeBadgeText: { fontSize: 11, fontWeight: '700', color: '#333' },
   contactPhone: { fontSize: 12, color: '#888' },
-  waBtn: { backgroundColor: '#e8f5e9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginLeft: 8 },
+  contactActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  waBtn: { backgroundColor: '#e8f5e9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   waBtnText: { color: '#2e7d32', fontSize: 13, fontWeight: '700' },
+  deleteBtn: { backgroundColor: '#fce8e8', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },
+  deleteBtnText: { fontSize: 15 },
   inputLabel: { fontSize: 13, fontWeight: '700', color: '#555', marginTop: 16, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 14, fontSize: 16, color: '#1a1a1a', borderWidth: 1.5, borderColor: '#e0e0e0' },
   typeRow: { flexDirection: 'row', gap: 12 },

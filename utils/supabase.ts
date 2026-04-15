@@ -11,17 +11,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
-export type WashRecord = {
-  id: string;
-  vehicle_number: string;
-  vehicle_type?: string;
-  customer_name?: string;
-  mobile_number: string;
-  amount: number;
-  payment_status: 'paid' | 'pending';
-  created_at: string;
-};
-
 export type WashContact = {
   id: string;
   wash_record_id: string;
@@ -29,4 +18,15 @@ export type WashContact = {
   customer_type: 'owner' | 'driver';
   phone_number: string;
   created_at: string;
+};
+
+export type WashRecord = {
+  id: string;
+  vehicle_number: string;
+  vehicle_type?: string;
+  mobile_number: string;
+  amount: number;
+  payment_status: 'paid' | 'pending';
+  created_at: string;
+  wash_contacts?: WashContact[];
 };

@@ -29,7 +29,7 @@ export default function DashboardScreen() {
 
     const { data, error } = await supabase
       .from('wash_records')
-      .select('*')
+      .select('*, wash_contacts(*)')
       .order('created_at', { ascending: false });
 
     if (error || !data) {
@@ -133,7 +133,7 @@ export default function DashboardScreen() {
                 <View style={styles.cardRow}>
                   <View style={styles.cardLeft}>
                     <Text style={styles.vehicleNumber}>{item.vehicle_number}</Text>
-                    {item.customer_name ? <Text style={styles.customerName}>{item.customer_name}</Text> : null}
+                    {item.wash_contacts?.[0] ? <Text style={styles.customerName}>{item.wash_contacts[0].customer_name}</Text> : null}
                     <Text style={styles.vehicleType}>{item.vehicle_type ?? 'Wash'}</Text>
                   </View>
                   <View style={styles.cardRight}>

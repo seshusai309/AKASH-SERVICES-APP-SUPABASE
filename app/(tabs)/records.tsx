@@ -24,7 +24,7 @@ export default function RecordsScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from('wash_records')
-      .select('*')
+      .select('*, wash_contacts(*)')
       .order('created_at', { ascending: false });
     if (!error && data) setRecords(data as WashRecord[]);
     setLoading(false);
@@ -94,7 +94,7 @@ export default function RecordsScreen() {
               <View style={styles.cardRow}>
                 <View style={styles.cardLeft}>
                   <Text style={styles.vehicleNumber}>{item.vehicle_number}</Text>
-                  {item.customer_name ? <Text style={styles.customerName}>{item.customer_name}</Text> : null}
+                  {item.wash_contacts?.[0] ? <Text style={styles.customerName}>{item.wash_contacts[0].customer_name}</Text> : null}
                   <Text style={styles.vehicleType}>{item.vehicle_type ?? 'Wash'}</Text>
                   <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
                 </View>
