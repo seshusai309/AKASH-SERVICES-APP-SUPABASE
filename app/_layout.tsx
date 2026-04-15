@@ -1,13 +1,12 @@
+import { C } from '@/constants/theme';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+declare global {
+  var lastPinTime: number | undefined;
+}
 
 const CORRECT_PIN = '1234';
 
@@ -33,30 +32,34 @@ function PinScreen({ onSuccess }: { onSuccess: () => void }) {
   const handleDelete = () => setPin(p => p.slice(0, -1));
 
   return (
-    <View style={styles.pinContainer}>
-      <Text style={styles.appTitle}>WashTrack</Text>
-      <Text style={styles.pinSubtitle}>Car Wash Manager</Text>
-      <Text style={styles.pinLabel}>Enter PIN to continue</Text>
+    <View style={s.container}>
+      {/* Banner */}
+      <Image
+        source={require('@/assets/akash-water-service-banner.png')}
+        style={s.banner}
+        resizeMode="contain"
+      />
 
-      <View style={styles.dotsRow}>
+      <Text style={s.enterLabel}>Enter PIN to continue</Text>
+
+      {/* Dots */}
+      <View style={s.dotsRow}>
         {[0, 1, 2, 3].map(i => (
-          <View key={i} style={[styles.dot, pin.length > i && styles.dotFilled]} />
+          <View key={i} style={[s.dot, pin.length > i && s.dotFilled]} />
         ))}
       </View>
 
-      <View style={styles.keypad}>
-        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'DEL'].map((key, idx) => (
+      {/* Keypad */}
+      <View style={s.keypad}>
+        {['1','2','3','4','5','6','7','8','9','','0','DEL'].map((key, idx) => (
           <TouchableOpacity
             key={idx}
-            style={[styles.key, key === '' && styles.keyEmpty]}
-            onPress={() => {
-              if (key === 'DEL') handleDelete();
-              else if (key !== '') handleDigit(key);
-            }}
+            style={[s.key, key === '' && s.keyEmpty]}
+            onPress={() => { if (key === 'DEL') handleDelete(); else if (key) handleDigit(key); }}
             disabled={key === ''}
             activeOpacity={0.7}
           >
-            <Text style={[styles.keyText, key === 'DEL' && styles.keyDel]}>{key}</Text>
+            <Text style={[s.keyText, key === 'DEL' && s.keyDel]}>{key}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -66,19 +69,65 @@ function PinScreen({ onSuccess }: { onSuccess: () => void }) {
 
 export default function RootLayout() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkPinExpiry();
+  }, []);
+
+  const checkPinExpiry = () => {
+    try {
+      const lastPinTime = global.lastPinTime;
+      if (lastPinTime) {
+        const currentTime = Date.now();
+        const fourHoursInMs = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+
+        if (currentTime - lastPinTime < fourHoursInMs) {
+          // Less than 4 hours have passed, skip PIN
+          setAuthenticated(true);
+          setLoading(false);
+          return;
+        }
+      }
+      // Either no previous PIN or 4+ hours have passed, show PIN screen
+      setLoading(false);
+    } catch (error) {
+      console.error('Error checking PIN expiry:', error);
+      setLoading(false);
+    }
+  };
+
+  const handlePinSuccess = () => {
+    try {
+      global.lastPinTime = Date.now();
+      setAuthenticated(true);
+    } catch (error) {
+      console.error('Error saving PIN time:', error);
+      setAuthenticated(true);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={s.container}>
+        <StatusBar style="dark" />
+        <ActivityIndicator size="large" color={C.accent} />
+      </View>
+    );
+  }
 
   if (!authenticated) {
     return (
       <>
         <StatusBar style="dark" />
-        <PinScreen onSuccess={() => setAuthenticated(true)} />
+        <PinScreen onSuccess={handlePinSuccess} />
       </>
     );
   }
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
       </Stack>
@@ -86,73 +135,16 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  pinContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 60,
-  },
-  appTitle: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#1a73e8',
-    letterSpacing: 1,
-  },
-  pinSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 40,
-    marginTop: 4,
-  },
-  pinLabel: {
-    fontSize: 16,
-    color: '#444',
-    marginBottom: 28,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    gap: 20,
-    marginBottom: 48,
-  },
-  dot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#1a73e8',
-    backgroundColor: 'transparent',
-  },
-  dotFilled: {
-    backgroundColor: '#1a73e8',
-  },
-  keypad: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: 280,
-    rowGap: 16,
-    columnGap: 16,
-    justifyContent: 'center',
-  },
-  key: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f0f4ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  keyEmpty: {
-    backgroundColor: 'transparent',
-  },
-  keyText: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: '#222',
-  },
-  keyDel: {
-    fontSize: 18,
-    color: '#e53935',
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center', paddingBottom: 48, paddingHorizontal: 24 },
+  banner: { width: 280, height: 140, marginBottom: 32 },
+  enterLabel: { fontSize: 16, fontWeight: '600', color: C.textSec, marginBottom: 24 },
+  dotsRow: { flexDirection: 'row', gap: 20, marginBottom: 40 },
+  dot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: C.accent, backgroundColor: 'transparent' },
+  dotFilled: { backgroundColor: C.accent },
+  keypad: { flexDirection: 'row', flexWrap: 'wrap', width: 288, rowGap: 14, columnGap: 14, justifyContent: 'center' },
+  key: { width: 82, height: 82, borderRadius: 41, backgroundColor: C.bg, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  keyEmpty: { backgroundColor: 'transparent', borderColor: 'transparent' },
+  keyText: { fontSize: 26, fontWeight: '700', color: C.primary },
+  keyDel: { fontSize: 16, color: C.danger },
 });

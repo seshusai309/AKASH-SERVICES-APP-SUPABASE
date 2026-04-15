@@ -1,15 +1,16 @@
+import { C } from '@/constants/theme';
+import { supabase, WashRecord } from '@/utils/supabase';
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { supabase, WashRecord } from '@/utils/supabase';
 
 type ProfileStats = {
   totalIncome: number;
@@ -30,20 +31,12 @@ export default function ProfileScreen() {
 
   const loadStats = async () => {
     const { data, error } = await supabase.from('wash_records').select('*');
-    if (error || !data) {
-      setLoading(false);
-      setRefreshing(false);
-      return;
-    }
+    if (error || !data) { setLoading(false); setRefreshing(false); return; }
 
     const records = data as WashRecord[];
     setStats({
-      totalIncome: records
-        .filter(r => r.payment_status === 'paid')
-        .reduce((sum, r) => sum + r.amount, 0),
-      totalPendingAmount: records
-        .filter(r => r.payment_status === 'pending')
-        .reduce((sum, r) => sum + r.amount, 0),
+      totalIncome: records.filter(r => r.payment_status === 'paid').reduce((s, r) => s + r.amount, 0),
+      totalPendingAmount: records.filter(r => r.payment_status === 'pending').reduce((s, r) => s + r.amount, 0),
       totalWashes: records.length,
       totalPaidWashes: records.filter(r => r.payment_status === 'paid').length,
     });
@@ -51,103 +44,122 @@ export default function ProfileScreen() {
     setRefreshing(false);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      loadStats();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { setLoading(true); loadStats(); }, []));
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1a73e8" />
-      </View>
-    );
+    return <View style={s.center}><ActivityIndicator size="large" color={C.accent} /></View>;
   }
 
+  const pendingWashes = stats.totalWashes - stats.totalPaidWashes;
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <>
+      <SafeAreaView style={{ backgroundColor: C.primary }} edges={['top']} />
       <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadStats(); }} />}
+        style={s.container}
+        contentContainerStyle={s.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); loadStats(); }}
+            tintColor={C.accent}
+          />
+        }
       >
-        <View style={styles.header}>
-          <Text style={styles.avatarText}>🏪</Text>
-          <Text style={styles.shopName}>Wash Track</Text>
-          <Text style={styles.shopSub}>Business Overview</Text>
+        {/* Header */}
+        <View style={s.header}>
+          <Text style={s.shopName}>Akash Water Services</Text>
+          <Text style={s.shopSub}>Business Overview</Text>
         </View>
 
-        {/* Total Income */}
-        <View style={styles.incomeCard}>
-          <Text style={styles.incomeLabel}>Total Lifetime Income</Text>
-          <Text style={styles.incomeValue}>₹{stats.totalIncome}</Text>
+        {/* Lifetime Income */}
+        <View style={s.incomeCard}>
+          <Text style={s.incomeLabel}>Total Lifetime Income</Text>
+          <Text style={s.incomeValue}>₹{stats.totalIncome}</Text>
         </View>
 
-        {/* Pending */}
-        <View style={styles.pendingCard}>
-          <Text style={styles.pendingLabel}>Total Pending Amount</Text>
-          <Text style={styles.pendingValue}>₹{stats.totalPendingAmount}</Text>
+        {/* Pending Amount */}
+        <View style={s.pendingCard}>
+          <Text style={s.pendingLabel}>Total Pending Amount</Text>
+          <Text style={s.pendingValue}>₹{stats.totalPendingAmount}</Text>
         </View>
 
         {/* Stats grid */}
-        <Text style={styles.sectionTitle}>All Time</Text>
-        <View style={styles.grid}>
-          <View style={[styles.gridCard, { backgroundColor: '#e3f0ff' }]}>
-            <Text style={styles.gridIcon}>🚗</Text>
-            <Text style={styles.gridValue}>{stats.totalWashes}</Text>
-            <Text style={styles.gridLabel}>Total Washes</Text>
+        <Text style={s.sectionTitle}>All Time Stats</Text>
+        <View style={s.grid}>
+          <View style={[s.gridCard, { backgroundColor: '#EBF5FF' }]}>
+            <Text style={s.gridValue}>{stats.totalWashes}</Text>
+            <Text style={s.gridLabel}>Total Washes</Text>
           </View>
-          <View style={[styles.gridCard, { backgroundColor: '#e6f9f0' }]}>
-            <Text style={styles.gridIcon}>✅</Text>
-            <Text style={styles.gridValue}>{stats.totalPaidWashes}</Text>
-            <Text style={styles.gridLabel}>Paid Washes</Text>
+          <View style={[s.gridCard, { backgroundColor: C.successBg }]}>
+            <Text style={[s.gridValue, { color: C.success }]}>{stats.totalPaidWashes}</Text>
+            <Text style={s.gridLabel}>Paid Washes</Text>
+          </View>
+        </View>
+        <View style={[s.grid, { marginTop: 10 }]}>
+          <View style={[s.gridCard, { backgroundColor: C.dangerBg }]}>
+            <Text style={[s.gridValue, { color: C.danger }]}>{pendingWashes}</Text>
+            <Text style={s.gridLabel}>Total Not Paid Washes</Text>
+          </View>
+          <View style={[s.gridCard, { backgroundColor: C.warningBg }]}>
+            <Text style={[s.gridValue, { color: C.warning }]}>
+              {stats.totalWashes > 0 ? Math.round((stats.totalPaidWashes / stats.totalWashes) * 100) : 0}%
+            </Text>
+            <Text style={s.gridLabel}>Collection Rate</Text>
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f8f9fa' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 20, paddingBottom: 48 },
-  header: { alignItems: 'center', paddingTop: 32, paddingBottom: 28 },
-  avatarText: { fontSize: 56 },
-  shopName: { fontSize: 26, fontWeight: '800', color: '#1a1a1a', marginTop: 8 },
-  shopSub: { fontSize: 14, color: '#888', marginTop: 4 },
-  incomeCard: {
-    backgroundColor: '#1a73e8',
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 12,
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
+  content: { paddingBottom: 56 },
+  header: {
+    backgroundColor: C.primary,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
     alignItems: 'center',
   },
-  incomeLabel: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-  incomeValue: { fontSize: 40, fontWeight: '800', color: '#fff', marginTop: 6 },
-  pendingCard: {
-    backgroundColor: '#fce8e8',
+  shopName: { fontSize: C.fontSize.xxl, fontWeight: '800', color: C.white },
+  shopSub: { fontSize: C.fontSize.md, color: 'rgba(255,255,255,0.65)', marginTop: 4 },
+  incomeCard: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    backgroundColor: C.accent,
     borderRadius: 20,
     padding: 24,
-    marginBottom: 24,
+    alignItems: 'center',
+  },
+  incomeLabel: { fontSize: C.fontSize.sm, color: 'rgba(255,255,255,0.75)', fontWeight: '700' },
+  incomeValue: { fontSize: 46, fontWeight: '800', color: C.white, marginTop: 6 },
+  pendingCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: C.dangerBg,
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#f5c6c6',
+    borderColor: '#FECACA',
   },
-  pendingLabel: { fontSize: 14, color: '#b71c1c', fontWeight: '600' },
-  pendingValue: { fontSize: 36, fontWeight: '800', color: '#c62828', marginTop: 6 },
+  pendingLabel: { fontSize: C.fontSize.sm, color: C.danger, fontWeight: '700' },
+  pendingValue: { fontSize: 40, fontWeight: '800', color: C.danger, marginTop: 6 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#888',
+    fontSize: C.fontSize.xs,
+    fontWeight: '800',
+    color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 10,
+    marginTop: 28,
+    marginBottom: 12,
+    paddingHorizontal: 16,
   },
-  grid: { flexDirection: 'row', gap: 12 },
-  gridCard: { flex: 1, borderRadius: 16, padding: 16, alignItems: 'flex-start' },
-  gridIcon: { fontSize: 24, marginBottom: 8 },
-  gridValue: { fontSize: 28, fontWeight: '800', color: '#1a1a1a' },
-  gridLabel: { fontSize: 13, color: '#555', marginTop: 2 },
+  grid: { flexDirection: 'row', gap: 12, paddingHorizontal: 16 },
+  gridCard: { flex: 1, borderRadius: 16, padding: 18, alignItems: 'flex-start' },
+  gridValue: { fontSize: 34, fontWeight: '800', color: C.accent },
+  gridLabel: { fontSize: C.fontSize.sm, color: C.textSec, marginTop: 4, fontWeight: '600' },
 });

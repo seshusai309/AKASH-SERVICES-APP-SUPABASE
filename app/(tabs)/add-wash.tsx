@@ -1,3 +1,5 @@
+import { C } from '@/constants/theme';
+import { supabase } from '@/utils/supabase';
 import * as Linking from 'expo-linking';
 import React, { useState } from 'react';
 import {
@@ -11,7 +13,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '@/utils/supabase';
 
 export default function AddWashScreen() {
   const [contactName, setContactName] = useState('');
@@ -42,7 +43,6 @@ export default function AddWashScreen() {
 
     setSaving(true);
 
-    // Save wash record
     const { data: washData, error: washError } = await supabase
       .from('wash_records')
       .insert([{
@@ -61,7 +61,6 @@ export default function AddWashScreen() {
       return;
     }
 
-    // Save contact linked to wash record
     await supabase.from('wash_contacts').insert([{
       wash_record_id: washData.id,
       customer_name: contactName.trim(),
@@ -98,96 +97,215 @@ export default function AddWashScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.screenTitle}>Add Wash</Text>
-        <Text style={styles.screenSubtitle}>Fill in the details below</Text>
+    <>
+      <SafeAreaView style={{ backgroundColor: C.primary }} edges={['top']} />
+      <ScrollView style={s.container} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        {/* Page Header */}
+        <View style={s.pageHeader}>
+          <Text style={s.pageTitle}>Add Wash</Text>
+          <Text style={s.pageSub}>Fill in the details below</Text>
+        </View>
 
-        <Text style={styles.label}>Customer Name</Text>
-        <TextInput style={styles.input} placeholder="e.g. Ravi Kumar" placeholderTextColor="#aaa" value={contactName} onChangeText={setContactName} autoCapitalize="words" returnKeyType="next" />
+        <Text style={s.label}>Customer Name</Text>
+        <TextInput
+          style={s.input}
+          placeholder="e.g. Ravi Kumar"
+          placeholderTextColor={C.textMuted}
+          value={contactName}
+          onChangeText={setContactName}
+          autoCapitalize="words"
+          returnKeyType="next"
+        />
 
-        <Text style={styles.label}>Customer Type</Text>
-        <View style={styles.typeRow}>
-          <TouchableOpacity style={[styles.typeBtn, contactType === 'owner' && styles.typeBtnOwner]} onPress={() => setContactType('owner')} activeOpacity={0.8}>
-            <Text style={[styles.typeBtnText, contactType === 'owner' && styles.typeBtnActiveText]}>👤  Owner</Text>
+        <Text style={s.label}>Customer Type</Text>
+        <View style={s.toggleRow}>
+          <TouchableOpacity
+            style={[s.toggleBtn, contactType === 'owner' && s.toggleBtnOwner]}
+            onPress={() => setContactType('owner')}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.toggleBtnText, contactType === 'owner' && s.toggleBtnTextActive]}>Owner</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.typeBtn, contactType === 'driver' && styles.typeBtnDriver]} onPress={() => setContactType('driver')} activeOpacity={0.8}>
-            <Text style={[styles.typeBtnText, contactType === 'driver' && styles.typeBtnActiveText]}>🚘  Driver</Text>
+          <TouchableOpacity
+            style={[s.toggleBtn, contactType === 'driver' && s.toggleBtnDriver]}
+            onPress={() => setContactType('driver')}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.toggleBtnText, contactType === 'driver' && s.toggleBtnTextActive]}>Driver</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Phone Number</Text>
-        <View style={styles.phoneRow}>
-          <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
-          <TextInput style={[styles.input, { flex: 1 }]} placeholder="10-digit number" placeholderTextColor="#aaa" value={contactPhone} onChangeText={t => setContactPhone(t.replace(/\D/g, '').slice(0, 10))} keyboardType="phone-pad" maxLength={10} returnKeyType="next" />
+        <Text style={s.label}>Phone Number</Text>
+        <View style={s.phoneRow}>
+          <View style={s.phonePrefix}><Text style={s.phonePrefixText}>+91</Text></View>
+          <TextInput
+            style={[s.input, { flex: 1 }]}
+            placeholder="10-digit number"
+            placeholderTextColor={C.textMuted}
+            value={contactPhone}
+            onChangeText={t => setContactPhone(t.replace(/\D/g, '').slice(0, 10))}
+            keyboardType="phone-pad"
+            maxLength={10}
+            returnKeyType="next"
+          />
         </View>
 
-        <Text style={styles.label}>Vehicle Type</Text>
-        <TextInput style={styles.input} placeholder="e.g. Hatchback, Sedan, SUV, Tractor" placeholderTextColor="#aaa" value={vehicleType} onChangeText={setVehicleType} returnKeyType="next" />
+        <Text style={s.label}>Vehicle Type</Text>
+        <TextInput
+          style={s.input}
+          placeholder="e.g. Hatchback, Sedan, SUV, Tractor"
+          placeholderTextColor={C.textMuted}
+          value={vehicleType}
+          onChangeText={setVehicleType}
+          returnKeyType="next"
+        />
 
-        <Text style={styles.label}>Vehicle Number</Text>
-        <TextInput style={styles.input} placeholder="e.g. TS09AB1234" placeholderTextColor="#aaa" value={vehicleNumber} onChangeText={setVehicleNumber} autoCapitalize="characters" returnKeyType="next" />
+        <Text style={s.label}>Vehicle Number</Text>
+        <TextInput
+          style={s.input}
+          placeholder="e.g. TS09AB1234"
+          placeholderTextColor={C.textMuted}
+          value={vehicleNumber}
+          onChangeText={setVehicleNumber}
+          autoCapitalize="characters"
+          returnKeyType="next"
+        />
 
-        <Text style={styles.label}>Amount (₹)</Text>
-        <TextInput style={styles.input} placeholder="e.g. 300" placeholderTextColor="#aaa" value={amount} onChangeText={t => setAmount(t.replace(/\D/g, ''))} keyboardType="numeric" returnKeyType="done" />
+        <Text style={s.label}>Amount (₹)</Text>
+        <TextInput
+          style={s.input}
+          placeholder="e.g. 300"
+          placeholderTextColor={C.textMuted}
+          value={amount}
+          onChangeText={t => setAmount(t.replace(/\D/g, ''))}
+          keyboardType="numeric"
+          returnKeyType="done"
+        />
 
-        <Text style={styles.label}>Payment</Text>
-        <View style={styles.paymentRow}>
-          <TouchableOpacity style={[styles.paymentBtn, paymentStatus === 'paid' && styles.paymentBtnPaid]} onPress={() => setPaymentStatus('paid')} activeOpacity={0.8}>
-            <Text style={[styles.paymentBtnText, paymentStatus === 'paid' && styles.paymentBtnTextActive]}>✅  Paid</Text>
+        <Text style={s.label}>Payment</Text>
+        <View style={s.toggleRow}>
+          <TouchableOpacity
+            style={[s.toggleBtn, paymentStatus === 'paid' && s.toggleBtnPaid]}
+            onPress={() => setPaymentStatus('paid')}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.toggleBtnText, paymentStatus === 'paid' && s.toggleBtnTextActive]}>Paid</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.paymentBtn, paymentStatus === 'pending' && styles.paymentBtnPending]} onPress={() => setPaymentStatus('pending')} activeOpacity={0.8}>
-            <Text style={[styles.paymentBtnText, paymentStatus === 'pending' && styles.paymentBtnTextActive]}>⏳  Pending</Text>
+          <TouchableOpacity
+            style={[s.toggleBtn, paymentStatus === 'pending' && s.toggleBtnPending]}
+            onPress={() => setPaymentStatus('pending')}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.toggleBtnText, paymentStatus === 'pending' && s.toggleBtnTextActivePending]}>Pending</Text>
           </TouchableOpacity>
         </View>
 
         {amount.trim() !== '' && Number(amount) > 0 && (
-          <View style={styles.amountCard}>
-            <Text style={styles.amountLabel}>Amount</Text>
-            <Text style={styles.amountValue}>₹{amount}</Text>
-            {paymentStatus === 'paid' && <Text style={styles.whatsappHint}>WhatsApp receipt will open automatically</Text>}
+          <View style={s.previewCard}>
+            <Text style={s.previewLabel}>Amount</Text>
+            <Text style={s.previewValue}>₹{amount}</Text>
+            {paymentStatus === 'paid' && (
+              <Text style={s.whatsappHint}>WhatsApp receipt will open automatically</Text>
+            )}
           </View>
         )}
 
-        <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[s.saveBtn, saving && s.saveBtnDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+          activeOpacity={0.85}
+        >
           {saving
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveBtnText}>{paymentStatus === 'paid' ? '💾  Save & Send WhatsApp' : '💾  Save Record'}</Text>
+            ? <ActivityIndicator color={C.white} />
+            : <Text style={s.saveBtnText}>{paymentStatus === 'paid' ? 'Save & Send WhatsApp' : 'Save Record'}</Text>
           }
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f8f9fa' },
-  container: { flex: 1 },
-  content: { padding: 20, paddingBottom: 48 },
-  screenTitle: { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginTop: 8 },
-  screenSubtitle: { fontSize: 14, color: '#888', marginBottom: 28, marginTop: 4 },
-  label: { fontSize: 13, fontWeight: '700', color: '#555', marginBottom: 6, marginTop: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: '#fff', borderRadius: 12, padding: 16, fontSize: 16, color: '#1a1a1a', borderWidth: 1.5, borderColor: '#e0e0e0', flex: 1 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { paddingHorizontal: 16, paddingBottom: 56 },
+  pageHeader: {
+    backgroundColor: C.primary,
+    marginHorizontal: -16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    marginBottom: 8,
+  },
+  pageTitle: { fontSize: C.fontSize.xxxl, fontWeight: '800', color: C.white },
+  pageSub: { fontSize: C.fontSize.md, color: 'rgba(255,255,255,0.65)', marginTop: 4 },
+  label: {
+    fontSize: C.fontSize.xs,
+    fontWeight: '800',
+    color: C.textSec,
+    marginBottom: 7,
+    marginTop: 18,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  input: {
+    backgroundColor: C.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: C.fontSize.md,
+    fontWeight: '600',
+    color: C.primary,
+    borderWidth: 1.5,
+    borderColor: C.border,
+  },
   phoneRow: { flexDirection: 'row', gap: 8 },
-  phonePrefix: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center', borderWidth: 1.5, borderColor: '#e0e0e0' },
-  phonePrefixText: { fontSize: 16, color: '#555', fontWeight: '600' },
-  typeRow: { flexDirection: 'row', gap: 12 },
-  typeBtn: { flex: 1, padding: 14, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', borderWidth: 1.5, borderColor: '#e0e0e0' },
-  typeBtnOwner: { backgroundColor: '#e3f0ff', borderColor: '#1a73e8' },
-  typeBtnDriver: { backgroundColor: '#e8f5e9', borderColor: '#2e7d32' },
-  typeBtnText: { fontSize: 15, fontWeight: '700', color: '#555' },
-  typeBtnActiveText: { color: '#1a1a1a' },
-  paymentRow: { flexDirection: 'row', gap: 12 },
-  paymentBtn: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', borderWidth: 1.5, borderColor: '#e0e0e0' },
-  paymentBtnPaid: { backgroundColor: '#1a73e8', borderColor: '#1a73e8' },
-  paymentBtnPending: { backgroundColor: '#f0a500', borderColor: '#f0a500' },
-  paymentBtnText: { fontSize: 15, fontWeight: '700', color: '#555' },
-  paymentBtnTextActive: { color: '#fff' },
-  amountCard: { backgroundColor: '#fff', borderRadius: 14, padding: 18, marginTop: 20, borderWidth: 1.5, borderColor: '#e0e0e0', alignItems: 'center' },
-  amountLabel: { fontSize: 13, color: '#888', fontWeight: '600' },
-  amountValue: { fontSize: 36, fontWeight: '800', color: '#1a73e8', marginTop: 4 },
-  whatsappHint: { fontSize: 12, color: '#25D366', marginTop: 6, fontWeight: '600' },
-  saveBtn: { backgroundColor: '#1a73e8', borderRadius: 14, padding: 18, alignItems: 'center', marginTop: 24 },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  phonePrefix: {
+    backgroundColor: C.card,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: C.border,
+  },
+  phonePrefixText: { fontSize: C.fontSize.md, color: C.textSec, fontWeight: '700' },
+  toggleRow: { flexDirection: 'row', gap: 10 },
+  toggleBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: C.card,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.border,
+  },
+  toggleBtnOwner: { backgroundColor: '#EBF5FF', borderColor: C.accent },
+  toggleBtnDriver: { backgroundColor: C.successBg, borderColor: C.success },
+  toggleBtnPaid: { backgroundColor: C.accent, borderColor: C.accent },
+  toggleBtnPending: { backgroundColor: C.warning, borderColor: C.warning },
+  toggleBtnText: { fontSize: C.fontSize.md, fontWeight: '700', color: C.textSec },
+  toggleBtnTextActive: { color: C.primary },
+  toggleBtnTextActivePending: { color: C.primary },
+  previewCard: {
+    backgroundColor: C.card,
+    borderRadius: 14,
+    padding: 20,
+    marginTop: 22,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    alignItems: 'center',
+  },
+  previewLabel: { fontSize: C.fontSize.sm, color: C.textMuted, fontWeight: '600' },
+  previewValue: { fontSize: 42, fontWeight: '800', color: C.accent, marginTop: 4 },
+  whatsappHint: { fontSize: C.fontSize.xs, color: '#25D366', marginTop: 8, fontWeight: '700' },
+  saveBtn: {
+    backgroundColor: C.accent,
+    borderRadius: 14,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  saveBtnDisabled: { opacity: 0.55 },
+  saveBtnText: { color: C.white, fontSize: 17, fontWeight: '800', letterSpacing: 0.3 },
 });
