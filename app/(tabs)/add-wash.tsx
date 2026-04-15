@@ -71,25 +71,25 @@ export default function AddWashScreen() {
     setSaving(false);
 
     if (paymentStatus === 'paid') {
-      sendWhatsApp(contactName.trim(), vehicleNumber.trim().toUpperCase(), vehicleType.trim(), Number(amount), contactPhone.trim());
+      sendWhatsApp(contactName.trim(), contactType, vehicleNumber.trim().toUpperCase(), vehicleType.trim(), Number(amount), contactPhone.trim());
     } else {
       Alert.alert('Saved!', 'Wash record added. Payment is pending.');
       resetForm();
     }
   };
 
-  const sendWhatsApp = (name: string, vNum: string, vType: string, amt: number, phone: string) => {
+  const sendWhatsApp = (name: string, custType: string, vNum: string, vType: string, amt: number, phone: string) => {
     const message =
       `*AKASH WATER SERVICES*\n` +
-      `Golagamudi, Opp. Vengamamba Daba\n\n` +
+      `Golagamudi Road, Opp. Vengamamba Daba\n\n` +
       `*Vehicle Wash Completed*\n\n` +
-      `Customer: ${name}\n` +
+      `${custType.charAt(0).toUpperCase() + custType.slice(1)}: ${name}\n` +
       `Vehicle: ${vNum}\n` +
-      `Type: ${vType}\n` +
+      `Service: ${vType}\n` +
       `Amount Paid: ₹${amt}\n\n` +
       `Location: https://maps.app.goo.gl/sxL4zJv9EDkGtxUr9\n\n` +
-      `Thank you for your business.\n` +
-      `We appreciate your support.`;
+      `Thanks for coming.\n` +
+      `Make sure to visit us again!`;
 
     Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(message)}`)
       .then(() => Alert.alert('Saved & Sent!', 'WhatsApp opened with receipt.', [{ text: 'OK', onPress: resetForm }]))

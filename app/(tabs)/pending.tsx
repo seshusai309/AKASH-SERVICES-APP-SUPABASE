@@ -1,3 +1,5 @@
+import { supabase, WashRecord } from '@/utils/supabase';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import React, { useCallback, useState } from 'react';
 import {
@@ -10,8 +12,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { supabase, WashRecord } from '@/utils/supabase';
 
 export default function PendingScreen() {
   const [records, setRecords] = useState<WashRecord[]>([]);
@@ -79,7 +79,8 @@ export default function PendingScreen() {
         `Vehicle: *${record.vehicle_number}*\n` +
         `Service: ${vehicleName}\n` +
         `Amount Paid: *₹${record.amount}*\n\n` +
-        `🙏 Thank you for choosing our service!`;
+        `Thanks for coming.\n` +
+        `Make sure to visit us again!`;
 
       const url = `https://wa.me/91${record.mobile_number}?text=${encodeURIComponent(message)}`;
       Linking.openURL(url).catch(() => {});

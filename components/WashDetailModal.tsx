@@ -1,3 +1,5 @@
+import { C } from '@/constants/theme';
+import { supabase, WashContact, WashRecord } from '@/utils/supabase';
 import * as Linking from 'expo-linking';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -12,20 +14,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { C } from '@/constants/theme';
-import { supabase, WashContact, WashRecord } from '@/utils/supabase';
 
-const WHATSAPP_MESSAGE = (record: WashRecord, contactName?: string) =>
+const WHATSAPP_MESSAGE = (record: WashRecord, contactName?: string, customerType?: string) =>
   `*AKASH WATER SERVICES*\n` +
-  `Golagamudi, Opp. Vengamamba Daba\n\n` +
+  `Golagamudi Road, Opp. Vengamamba Daba\n\n` +
   `*Vehicle Wash Completed*\n\n` +
-  `Customer: ${contactName ?? ''}\n` +
+  `${customerType ? customerType.charAt(0).toUpperCase() + customerType.slice(1) + ': ' : 'Customer: '}${contactName ?? ''}\n` +
   `Vehicle: ${record.vehicle_number}\n` +
-  `Type: ${record.vehicle_type ?? ''}\n` +
+  `Service: ${record.vehicle_type ?? ''}\n` +
   `Amount Paid: ₹${record.amount}\n\n` +
   `Location: https://maps.app.goo.gl/sxL4zJv9EDkGtxUr9\n\n` +
-  `Thank you for your business.\n` +
-  `We appreciate your support.`;
+  `Thanks for coming.\n` +
+  `Make sure to visit us again!`;
 
 type Props = {
   record: WashRecord | null;
@@ -118,7 +118,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
 
   const sendToContact = (contact: WashContact) => {
     if (!record) return;
-    const msg = WHATSAPP_MESSAGE(record, contact.customer_name);
+    const msg = WHATSAPP_MESSAGE(record, contact.customer_name, contact.customer_type);
     Linking.openURL(`https://wa.me/91${contact.phone_number}?text=${encodeURIComponent(msg)}`);
   };
 
@@ -152,7 +152,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
     const saved = data as WashContact;
     setContacts(prev => [...prev, saved]);
     setShowAddContact(false);
-    const msg = WHATSAPP_MESSAGE(record, saved.customer_name);
+    const msg = WHATSAPP_MESSAGE(record, saved.customer_name, saved.customer_type);
     Linking.openURL(`https://wa.me/91${saved.phone_number}?text=${encodeURIComponent(msg)}`);
   };
 
