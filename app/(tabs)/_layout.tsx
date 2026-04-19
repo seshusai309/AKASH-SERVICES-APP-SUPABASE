@@ -22,7 +22,7 @@ export default function TabLayout() {
       <Tabs.Screen name="add-wash"  options={{ title: 'Add Wash', tabBarIcon: ({ focused }) => <TabIcon emoji="➕" focused={focused} /> }} />
       <Tabs.Screen name="pending"   options={{ href: null }} />
       <Tabs.Screen name="records"   options={{ title: 'Records', tabBarIcon: ({ focused }) => <TabIcon emoji="📋" focused={focused} /> }} />
-      <Tabs.Screen name="profile"   options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} /> }} />
+      <Tabs.Screen name="profile"   options={{ href: null }} />
     </Tabs>
   );
 }
@@ -32,8 +32,8 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderTopWidth: 1,
     borderTopColor: C.border,
-    height: 68,
-    paddingBottom: 10,
+    height: 80,
+    paddingBottom: 22,
     paddingTop: 8,
   },
   label: { fontSize: 11, fontWeight: '700' },

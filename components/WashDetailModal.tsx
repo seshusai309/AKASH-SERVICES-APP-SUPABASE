@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,7 +24,7 @@ const WHATSAPP_MESSAGE = (record: WashRecord, contactName?: string, customerType
   `${customerType ? customerType.charAt(0).toUpperCase() + customerType.slice(1) + ': ' : 'Customer: '}${contactName ?? ''}\n` +
   `Vehicle: ${record.vehicle_number}\n` +
   `Service: ${record.vehicle_type ?? ''}\n` +
-  `Amount Paid: ₹${record.amount}\n\n` +
+  `${record.payment_status === 'pending' ? 'Amount Pending' : 'Amount Paid'}: ₹${record.amount}\n\n` +
   `Location: https://maps.app.goo.gl/sxL4zJv9EDkGtxUr9\n\n` +
   `Thanks for coming.\n` +
   `Make sure to visit us again!`;
@@ -49,6 +51,8 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
 
   // Slide-up animation — sheet only, overlay is static
   const slideY = useRef(new Animated.Value(600)).current;
+  const addContactScrollRef = useRef<any>(null);
+  const mainScrollRef = useRef<any>(null);
 
   useEffect(() => {
     if (record) {
@@ -91,6 +95,23 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
           setSaving(false);
           if (error) { Alert.alert('Error', error.message); return; }
           onUpdated({ ...record, payment_status: 'paid' });
+        },
+      },
+    ]);
+  };
+
+  const markAsPending = () => {
+    if (!record) return;
+    Alert.alert('Mark as Pending', `Move ₹${record.amount} back to pending?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm', onPress: async () => {
+          setSaving(true);
+          const { error } = await supabase
+            .from('wash_records').update({ payment_status: 'pending' }).eq('id', record.id);
+          setSaving(false);
+          if (error) { Alert.alert('Error', error.message); return; }
+          onUpdated({ ...record, payment_status: 'pending' });
         },
       },
     ]);
@@ -151,7 +172,13 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
     if (error) { Alert.alert('Error', error.message); return; }
     const saved = data as WashContact;
     setContacts(prev => [...prev, saved]);
+
+    // Clear form fields and go back to detail view
+    setNewName('');
+    setNewType('owner');
+    setNewPhone('');
     setShowAddContact(false);
+
     const msg = WHATSAPP_MESSAGE(record, saved.customer_name, saved.customer_type);
     Linking.openURL(`https://wa.me/91${saved.phone_number}?text=${encodeURIComponent(msg)}`);
   };
@@ -165,14 +192,24 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
   return (
     <Modal visible={!!record} animationType="none" transparent onRequestClose={onClose}>
       {/* Static dark overlay */}
-      <View style={s.overlay}>
-        {/* Animated sheet only */}
+      <View style={s.overlayBg} />
+
+      {/* Keyboard-aware wrapper so sheet lifts above keyboard */}
+      <KeyboardAvoidingView
+        style={s.kvWrapper}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <Animated.View style={[s.sheet, { transform: [{ translateY: slideY }] }]}>
           <View style={s.handle} />
 
           {showAddContact ? (
             /* ── Add / Send to Other Person ── */
-            <>
+            <ScrollView
+              ref={addContactScrollRef}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 120 }}
+            >
               <View style={s.sheetHeader}>
                 <Text style={s.sheetTitle}>Send to Other Person</Text>
                 <TouchableOpacity onPress={() => setShowAddContact(false)} style={s.closeBtn}>
@@ -188,6 +225,8 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                 value={newName}
                 onChangeText={setNewName}
                 autoCapitalize="words"
+                returnKeyType="next"
+                onFocus={() => setTimeout(() => addContactScrollRef.current?.scrollToEnd({ animated: true }), 300)}
               />
 
               <Text style={s.inputLabel}>Type</Text>
@@ -219,6 +258,8 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                   onChangeText={t => setNewPhone(t.replace(/\D/g, '').slice(0, 10))}
                   keyboardType="phone-pad"
                   maxLength={10}
+                  returnKeyType="done"
+                  onFocus={() => setTimeout(() => addContactScrollRef.current?.scrollToEnd({ animated: true }), 300)}
                 />
               </View>
 
@@ -233,10 +274,17 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                   : <Text style={s.primaryBtnText}>Save & Send WhatsApp</Text>
                 }
               </TouchableOpacity>
-            </>
+
+              <View style={{ height: 20 }} />
+            </ScrollView>
           ) : (
             /* ── Main details view ── */
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              ref={mainScrollRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 120 }}
+            >
               <View style={s.sheetHeader}>
                 <Text style={s.sheetTitle}>Wash Details</Text>
                 <TouchableOpacity onPress={onClose} style={s.closeBtn}>
@@ -270,6 +318,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                             onChangeText={t => setEditAmount(t.replace(/\D/g, ''))}
                             keyboardType="numeric"
                             autoFocus
+                            onFocus={() => setTimeout(() => mainScrollRef.current?.scrollToEnd({ animated: true }), 300)}
                           />
                         : <Text style={s.amountValue}>₹{record.amount}</Text>
                       }
@@ -290,6 +339,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                     )}
                   </View>
 
+                  {/* Status toggle buttons */}
                   {record.payment_status === 'pending' && (
                     <TouchableOpacity
                       style={[s.primaryBtn, saving && s.btnDisabled]}
@@ -300,6 +350,20 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
                       {saving
                         ? <ActivityIndicator color={C.white} />
                         : <Text style={s.primaryBtnText}>Mark as Paid</Text>
+                      }
+                    </TouchableOpacity>
+                  )}
+
+                  {record.payment_status === 'paid' && (
+                    <TouchableOpacity
+                      style={[s.secondaryBtn, saving && s.btnDisabled]}
+                      onPress={markAsPending}
+                      disabled={saving}
+                      activeOpacity={0.85}
+                    >
+                      {saving
+                        ? <ActivityIndicator color={C.warning} />
+                        : <Text style={s.secondaryBtnText}>Mark as Pending</Text>
                       }
                     </TouchableOpacity>
                   )}
@@ -349,7 +413,7 @@ export default function WashDetailModal({ record, onClose, onUpdated }: Props) {
             </ScrollView>
           )}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -364,13 +428,14 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const s = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  overlayBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+  kvWrapper: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: 52,
+    paddingBottom: 16,
     maxHeight: '92%',
   },
   handle: { width: 40, height: 4, backgroundColor: C.border, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
@@ -423,8 +488,10 @@ const s = StyleSheet.create({
   editBtnText: { color: C.accent, fontWeight: '700', fontSize: 13 },
 
   primaryBtn: { backgroundColor: C.accent, borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  secondaryBtn: { backgroundColor: C.warningBg, borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', marginTop: 12, borderWidth: 1.5, borderColor: C.warning },
   btnDisabled: { opacity: 0.55 },
   primaryBtnText: { color: C.white, fontSize: 16, fontWeight: '800' },
+  secondaryBtnText: { color: C.warning, fontSize: 16, fontWeight: '800' },
 
   contactsHeader: {
     flexDirection: 'row',

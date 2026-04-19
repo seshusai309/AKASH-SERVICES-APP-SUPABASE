@@ -62,8 +62,17 @@ export default function DashboardScreen() {
       >
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.headerTitle}>Akash Water Services</Text>
-          <Text style={s.headerSub}>Dashboard</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.headerTitle}>Akash Water Services</Text>
+            <Text style={s.headerSub}>Dashboard</Text>
+          </View>
+          <TouchableOpacity
+            style={s.profileBtn}
+            onPress={() => router.push('/(tabs)/profile')}
+            activeOpacity={0.8}
+          >
+            <Text style={s.profileBtnIcon}>📊</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Stat cards */}
@@ -147,9 +156,11 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   content: { paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg },
-  header: { backgroundColor: C.primary, paddingTop: 20, paddingBottom: 24, paddingHorizontal: 20 },
+  header: { backgroundColor: C.primary, paddingTop: 20, paddingBottom: 24, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' },
   headerTitle: { fontSize: C.fontSize.xxl, fontWeight: '800', color: C.white },
   headerSub: { fontSize: C.fontSize.sm, color: 'rgba(255,255,255,0.65)', marginTop: 3 },
+  profileBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+  profileBtnIcon: { fontSize: 22 },
   statsRow: { flexDirection: 'row', gap: 12, padding: 16 },
   statCard: { flex: 1, borderRadius: 14, padding: 16 },
   statValue: { fontSize: C.fontSize.xxxl, fontWeight: '800', marginBottom: 4 },

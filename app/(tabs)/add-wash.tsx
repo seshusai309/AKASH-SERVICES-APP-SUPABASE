@@ -1,10 +1,13 @@
 import { C } from '@/constants/theme';
 import { supabase } from '@/utils/supabase';
 import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AddWashScreen() {
+  const router = useRouter();
   const [contactName, setContactName] = useState('');
   const [contactType, setContactType] = useState<'owner' | 'driver'>('owner');
   const [contactPhone, setContactPhone] = useState('');
@@ -70,15 +74,27 @@ export default function AddWashScreen() {
 
     setSaving(false);
 
-    if (paymentStatus === 'paid') {
-      sendWhatsApp(contactName.trim(), contactType, vehicleNumber.trim().toUpperCase(), vehicleType.trim(), Number(amount), contactPhone.trim());
-    } else {
-      Alert.alert('Saved!', 'Wash record added. Payment is pending.');
-      resetForm();
-    }
+    sendWhatsApp(
+      contactName.trim(),
+      contactType,
+      vehicleNumber.trim().toUpperCase(),
+      vehicleType.trim(),
+      Number(amount),
+      contactPhone.trim(),
+      paymentStatus === 'pending',
+    );
   };
 
-  const sendWhatsApp = (name: string, custType: string, vNum: string, vType: string, amt: number, phone: string) => {
+  const sendWhatsApp = (
+    name: string,
+    custType: string,
+    vNum: string,
+    vType: string,
+    amt: number,
+    phone: string,
+    isPending: boolean,
+  ) => {
+    const amountLine = isPending ? `Amount Pending: ₹${amt}` : `Amount Paid: ₹${amt}`;
     const message =
       `*AKASH WATER SERVICES*\n` +
       `Golagamudi Road, Opp. Vengamamba Daba\n\n` +
@@ -86,20 +102,33 @@ export default function AddWashScreen() {
       `${custType.charAt(0).toUpperCase() + custType.slice(1)}: ${name}\n` +
       `Vehicle: ${vNum}\n` +
       `Service: ${vType}\n` +
-      `Amount Paid: ₹${amt}\n\n` +
+      `${amountLine}\n\n` +
       `Location: https://maps.app.goo.gl/sxL4zJv9EDkGtxUr9\n\n` +
       `Thanks for coming.\n` +
       `Make sure to visit us again!`;
 
     Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(message)}`)
-      .then(() => Alert.alert('Saved & Sent!', 'WhatsApp opened with receipt.', [{ text: 'OK', onPress: resetForm }]))
-      .catch(() => Alert.alert('Saved!', 'Record saved. Could not open WhatsApp.', [{ text: 'OK', onPress: resetForm }]));
+      .catch(() => {/* silently ignore if WA not available */});
+
+    resetForm();
+    router.navigate('/');
   };
 
   return (
     <>
       <SafeAreaView style={{ backgroundColor: C.primary }} edges={['top']} />
-      <ScrollView style={s.container} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: C.bg }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={80}
+      >
+      <ScrollView
+        style={s.container}
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
+      >
         {/* Page Header */}
         <View style={s.pageHeader}>
           <Text style={s.pageTitle}>Add Wash</Text>
@@ -204,9 +233,11 @@ export default function AddWashScreen() {
           <View style={s.previewCard}>
             <Text style={s.previewLabel}>Amount</Text>
             <Text style={s.previewValue}>₹{amount}</Text>
-            {paymentStatus === 'paid' && (
-              <Text style={s.whatsappHint}>WhatsApp receipt will open automatically</Text>
-            )}
+            <Text style={[s.whatsappHint, paymentStatus === 'pending' && s.whatsappHintPending]}>
+              {paymentStatus === 'paid'
+                ? 'WhatsApp receipt (Amount Paid) will be sent'
+                : 'WhatsApp notice (Amount Pending) will be sent'}
+            </Text>
           </View>
         )}
 
@@ -218,17 +249,21 @@ export default function AddWashScreen() {
         >
           {saving
             ? <ActivityIndicator color={C.white} />
-            : <Text style={s.saveBtnText}>{paymentStatus === 'paid' ? 'Save & Send WhatsApp' : 'Save Record'}</Text>
+            : <Text style={s.saveBtnText}>Save & Send WhatsApp</Text>
           }
         </TouchableOpacity>
+
+        {/* Extra bottom space so button is never hidden by keyboard */}
+        <View style={{ height: 40 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  content: { paddingHorizontal: 16, paddingBottom: 56 },
+  content: { paddingHorizontal: 16, paddingBottom: 24 },
   pageHeader: {
     backgroundColor: C.primary,
     marginHorizontal: -16,
@@ -298,6 +333,7 @@ const s = StyleSheet.create({
   previewLabel: { fontSize: C.fontSize.sm, color: C.textMuted, fontWeight: '600' },
   previewValue: { fontSize: 42, fontWeight: '800', color: C.accent, marginTop: 4 },
   whatsappHint: { fontSize: C.fontSize.xs, color: '#25D366', marginTop: 8, fontWeight: '700' },
+  whatsappHintPending: { color: C.warning },
   saveBtn: {
     backgroundColor: C.accent,
     borderRadius: 14,
